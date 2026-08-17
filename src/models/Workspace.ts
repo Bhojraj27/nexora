@@ -7,13 +7,12 @@ export type PlanType = (typeof PLAN_TYPES)[number];
 const workspaceSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    slug: { type: String, required: true, unique: true, lowercase: true },
+    slug: { type: String, required: true, lowercase: true },
     logoUrl: { type: String, default: null },
     ownerId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     plan: { type: String, enum: PLAN_TYPES, default: "free" },
     preferences: {

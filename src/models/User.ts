@@ -26,8 +26,6 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-userSchema.index({ email: 1 }, { unique: true });
-
 export type User = InferSchemaType<typeof userSchema> & { _id: mongoose.Types.ObjectId };
 
 export const UserModel =

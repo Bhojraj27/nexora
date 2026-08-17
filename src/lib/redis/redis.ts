@@ -13,21 +13,32 @@ import { logger } from "@/lib/logger";
 
 const globalForRedis = globalThis as unknown as {
   redisClient?: Redis;
+  redisErrorLoggedAt?: number;
 };
+
+const ERROR_LOG_INTERVAL_MS = 30_000;
 
 function createClient(): Redis {
   const client = new Redis(config.redisUrl, {
     maxRetriesPerRequest: null,
-    enableOfflineQueue: true,
-    lazyConnect: false,
-    retryStrategy: (times) => Math.min(times * 200, 5000),
+    enableOfflineQueue: false,
+    lazyConnect: true,
+    retryStrategy: (times) => (times > 3 ? null : Math.min(times * 200, 2000)),
   });
 
   client.on("error", (err) => {
-    logger.warn("redis error", { error: err.message });
+    const now = Date.now();
+    const lastLogged = globalForRedis.redisErrorLoggedAt ?? 0;
+    if (now - lastLogged < ERROR_LOG_INTERVAL_MS) return;
+
+    globalForRedis.redisErrorLoggedAt = now;
+    logger.warn("redis unavailable — cache and rate limits will use fallbacks", {
+      error: err.message || "connection refused",
+    });
   });
 
   client.on("connect", () => {
+    globalForRedis.redisErrorLoggedAt = undefined;
     logger.info("redis connected");
   });
 
@@ -43,7 +54,11 @@ export function getRedis(): Redis {
 
 export async function pingRedis(): Promise<boolean> {
   try {
-    await getRedis().ping();
+    const redis = getRedis();
+    if (redis.status === "wait") {
+      await redis.connect();
+    }
+    await redis.ping();
     return true;
   } catch {
     return false;

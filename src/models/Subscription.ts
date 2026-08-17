@@ -18,7 +18,6 @@ const subscriptionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Workspace",
       required: true,
-      index: true,
     },
     provider: { type: String, default: "mock" },
     plan: { type: String, enum: PLAN_TYPES, required: true },

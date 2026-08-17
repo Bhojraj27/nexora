@@ -12,6 +12,7 @@ import {
   Pin,
   FileText,
   Sparkles,
+  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/components/workspace-context";
@@ -21,6 +22,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   actionListConversations,
   actionCreateConversation,
@@ -57,6 +63,7 @@ export function ChatClient() {
   const [streaming, setStreaming] = useState(false);
   const [currentConvoId, setCurrentConvoId] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [mobileConvoOpen, setMobileConvoOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -234,6 +241,56 @@ export function ChatClient() {
     }
   }
 
+  function selectConversation(id: string) {
+    router.push(`/app/chat?c=${id}`);
+    setMobileConvoOpen(false);
+  }
+
+  const conversationList = (
+    <div className="space-y-0.5 p-2">
+      {convosLoading &&
+        Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-full" />
+        ))}
+      {(conversations ?? []).map((convo) => (
+        <div
+          key={convo._id.toString()}
+          className={cn(
+            "group flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
+            activeId === convo._id.toString()
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-secondary",
+          )}
+          onClick={() => selectConversation(convo._id.toString())}
+        >
+          <Pin
+            className={cn(
+              "h-3.5 w-3.5 shrink-0",
+              convo.pinned ? "fill-primary text-primary" : "opacity-0",
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate">{convo.title}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {timeAgo(convo.lastMessageAt ?? convo.createdAt)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 rounded p-1 text-muted-foreground opacity-100 hover:bg-secondary hover:text-destructive md:opacity-0 md:group-hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeConversation(convo._id.toString());
+            }}
+            aria-label="Delete conversation"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-full">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border md:flex">
@@ -246,53 +303,31 @@ export function ChatClient() {
             <Plus className="h-4 w-4" /> New conversation
           </Button>
         </div>
-        <ScrollArea className="flex-1">
-          <div className="space-y-0.5 p-2">
-            {convosLoading &&
-              Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 w-full" />
-              ))}
-            {(conversations ?? []).map((convo) => (
-              <div
-                key={convo._id.toString()}
-                className={cn(
-                  "group flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
-                  activeId === convo._id.toString()
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-secondary",
-                )}
-                onClick={() => router.push(`/app/chat?c=${convo._id.toString()}`)}
-              >
-                <Pin
-                  className={cn(
-                    "h-3.5 w-3.5 shrink-0",
-                    convo.pinned ? "fill-primary text-primary" : "opacity-0",
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate">{convo.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {timeAgo(convo.lastMessageAt ?? convo.createdAt)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 hover:bg-secondary hover:text-destructive group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeConversation(convo._id.toString());
-                  }}
-                  aria-label="Delete conversation"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+        <ScrollArea className="flex-1">{conversationList}</ScrollArea>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2 md:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setMobileConvoOpen(true)}
+          >
+            <PanelLeft className="h-4 w-4" />
+            Conversations
+          </Button>
+          <Button
+            size="sm"
+            className="ml-auto gap-2"
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+          >
+            <Plus className="h-4 w-4" />
+            New
+          </Button>
+        </div>
+
         <ScrollArea className="flex-1">
           <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4 lg:p-6">
             {messages.length === 0 && !loadingHistory && (
@@ -392,6 +427,27 @@ export function ChatClient() {
           </div>
         </div>
       </div>
+
+      <Dialog open={mobileConvoOpen} onOpenChange={setMobileConvoOpen}>
+        <DialogContent className="mobile-nav-dialog fixed inset-y-0 left-0 top-0 flex h-full w-[min(100vw,320px)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-r p-0 shadow-xl">
+          <DialogTitle className="border-b border-border px-4 py-3 text-base font-semibold">
+            Conversations
+          </DialogTitle>
+          <div className="border-b border-border p-3">
+            <Button
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                createMutation.mutate();
+                setMobileConvoOpen(false);
+              }}
+              disabled={createMutation.isPending}
+            >
+              <Plus className="h-4 w-4" /> New conversation
+            </Button>
+          </div>
+          <ScrollArea className="flex-1">{conversationList}</ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

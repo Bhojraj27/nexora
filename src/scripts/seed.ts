@@ -98,7 +98,7 @@ async function seed() {
         emailVerified: true,
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 
   let workspace = await WorkspaceModel.findOne({ name: "Demo Workspace" });

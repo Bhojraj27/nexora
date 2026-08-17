@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { NexoraLogo } from "@/components/nexora-logo";
 import { SignupForm } from "@/components/auth/signup-form";
 import { getSession } from "@/lib/auth/session";
 import { config } from "@/lib/config";
+import { Card, CardContent } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -16,21 +18,31 @@ export default async function SignupPage() {
   if (session?.sub) redirect("/app");
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-      <div className="mb-8 flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" />
-        </span>
-        <span className="text-xl font-bold tracking-tight">NEXORA</span>
+    <div className="auth-page-bg flex min-h-screen flex-col bg-background">
+      <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2">
+          <NexoraLogo size={32} />
+          <span className="text-lg font-bold tracking-tight">NEXORA</span>
+        </Link>
+        <ThemeToggle />
+      </header>
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-10">
+        <Card className="w-full max-w-md border-border/80 shadow-lg">
+          <CardContent className="p-6 sm:p-8">
+            {config.enableSignups ? (
+              <SignupForm />
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                Signups are currently disabled.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <Link href="/" className="mt-6 text-xs text-muted-foreground transition-colors hover:text-foreground">
+          ← Back to home
+        </Link>
       </div>
-      {config.enableSignups ? (
-        <SignupForm />
-      ) : (
-        <p className="text-sm text-muted-foreground">Signups are currently disabled.</p>
-      )}
-      <Link href="/" className="mt-8 text-xs text-muted-foreground hover:text-foreground">
-        Back to home
-      </Link>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,8 +13,10 @@ import {
   BarChart3,
   Settings,
   CreditCard,
-  Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
+import { NexoraLogo } from "@/components/nexora-logo";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/components/workspace-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +28,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/actions/auth";
@@ -46,25 +54,63 @@ const FOOTER_ITEMS = [
   { href: "/app/billing", label: "Billing", icon: CreditCard },
 ];
 
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  exact,
+  pathname,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const active = exact ? pathname === href : pathname.startsWith(href);
+
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </Link>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { workspace, user } = useWorkspace();
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleLogout() {
+    setMobileOpen(false);
     await logout();
   }
 
+  function closeMobile() {
+    setMobileOpen(false);
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface lg:flex">
         <Link
           href="/app"
           className="flex h-14 items-center gap-2 border-b border-border px-4"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          <NexoraLogo size={32} />
           <span className="text-lg font-bold tracking-tight">NEXORA</span>
         </Link>
 
@@ -100,47 +146,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <ScrollArea className="flex-1">
           <nav className="space-y-1 p-3">
-            {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
-              const active = exact ? pathname === href : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
+            {NAV_ITEMS.map((item) => (
+              <NavLink key={item.href} {...item} pathname={pathname} />
+            ))}
           </nav>
         </ScrollArea>
 
         <div className="border-t border-border p-3">
           <nav className="space-y-1">
-            {FOOTER_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active = pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              );
-            })}
+            {FOOTER_ITEMS.map((item) => (
+              <NavLink key={item.href} {...item} pathname={pathname} />
+            ))}
           </nav>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -183,18 +199,101 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b border-border bg-surface px-4 lg:px-6">
-          <Link href="/app" className="flex items-center gap-2 lg:hidden">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <span className="font-bold tracking-tight">NEXORA</span>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:px-4 lg:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
+          <Link href="/app" className="flex min-w-0 items-center gap-2 lg:hidden">
+            <NexoraLogo size={28} />
+            <span className="truncate font-bold tracking-tight">NEXORA</span>
           </Link>
-          <div className="flex-1" />
+
+          <div className="hidden min-w-0 flex-1 lg:block">
+            <p className="truncate text-sm font-medium text-muted-foreground">
+              {workspace.name}
+            </p>
+          </div>
+
+          <div className="flex-1 lg:hidden" />
+
           <ThemeToggle />
         </header>
-        <main className="flex-1 overflow-y-auto">{children}</main>
+
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+        <DialogContent className="mobile-nav-dialog fixed inset-y-0 left-0 top-0 flex h-full w-[min(100vw,300px)] max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-r p-0 shadow-xl">
+          <DialogTitle className="sr-only">Navigation menu</DialogTitle>
+
+          <div className="flex h-14 items-center justify-between border-b border-border px-4">
+            <Link href="/app" className="flex items-center gap-2" onClick={closeMobile}>
+              <NexoraLogo size={28} />
+              <span className="font-bold tracking-tight">NEXORA</span>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={closeMobile} aria-label="Close menu">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          <div className="border-b border-border px-3 py-3">
+            <div className="flex items-center gap-2 rounded-md bg-secondary/60 px-3 py-2">
+              <Avatar className="h-7 w-7 rounded-md">
+                <AvatarImage src={workspace.logoUrl ?? undefined} />
+                <AvatarFallback className="rounded-md bg-accent/15 text-[10px] text-accent">
+                  {initials(workspace.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{workspace.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1">
+            <nav className="space-y-1 p-3">
+              {NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.href}
+                  {...item}
+                  pathname={pathname}
+                  onNavigate={closeMobile}
+                />
+              ))}
+            </nav>
+            <div className="border-t border-border p-3">
+              <nav className="space-y-1">
+                {FOOTER_ITEMS.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    {...item}
+                    pathname={pathname}
+                    onNavigate={closeMobile}
+                  />
+                ))}
+              </nav>
+            </div>
+          </ScrollArea>
+
+          <div className="border-t border-border p-3">
+            <Button
+              variant="outline"
+              className="w-full text-destructive hover:text-destructive"
+              onClick={handleLogout}
+            >
+              Log out
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

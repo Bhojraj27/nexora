@@ -39,7 +39,7 @@ export async function getOrCreateUsage(
   const usage = await UsageModel.findOneAndUpdate(
     { workspaceId, month },
     { $setOnInsert: { workspaceId, month } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).lean();
   return usage;
 }

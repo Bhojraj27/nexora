@@ -42,23 +42,23 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6 lg:p-8">
+    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:space-y-8 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
             Welcome back, {access.user.name.split(" ")[0]} 👋
           </h1>
           <p className="text-sm text-muted-foreground">
             Here&apos;s what&apos;s happening in {access.workspace.name}.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/app/chat">
               <MessageSquare className="h-4 w-4" /> Ask AI
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/app/documents?upload=1">
               <Upload className="h-4 w-4" /> Upload
             </Link>
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href}>
             <Card className="transition-colors hover:border-border-strong">

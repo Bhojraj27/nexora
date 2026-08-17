@@ -7,7 +7,6 @@ const documentChunkSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Document",
       required: true,
-      index: true,
     },
     workspaceId: {
       type: Schema.Types.ObjectId,
